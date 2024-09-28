@@ -4,6 +4,11 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize, labeled, unlabeled]
+  workflow_call:
+    secrets:
+      github-token:
+        description: 'The Github token'
+        required: false
 
 jobs:
   labels-test:
@@ -21,7 +26,7 @@ jobs:
         id: action-assign-labels
         uses: mauroalderete/action-assign-labels@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
           conventional-commits: |
             conventional-commits:
               - type: 'fix'
@@ -69,4 +74,4 @@ jobs:
           some: versioning/patch, versioning/minor, versioning/major
           request-review: true
           request-review-header: "**:bookmark: verify-labels-action**"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
