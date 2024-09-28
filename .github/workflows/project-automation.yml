@@ -1,0 +1,417 @@
+name: Project Automations
+
+on:
+  issues:
+    types: 
+      - opened
+      - closed
+      - assigned
+  pull_request:
+    types: 
+      - opened
+
+permissions:
+  repository-projects: write
+
+env:
+  LABEL_BUG: bug
+  LABEL_ENHANCEMENT: enhancement
+  LABEL_HELP_WANTED: help wanted
+  LABEL_INVALID: invalid
+  LABEL_DUPLICATE: duplicate
+  LABEL_WONTFIX: wontfix
+
+  STATUS_BUG: Bug
+  STATUS_ENHANCEMENT: Enhancement
+  STATUS_HELP_WANTED: Help Wanted
+  STATUS_BACKLOG: Backlog
+  STATUS_SPRINT: Sprint
+  STATUS_IN_REVIEW: In review
+  STATUS_DONE: Done
+  STATUS_TRASH: Trash
+  STATUS_EMPTY: No Status
+
+  PROJECT_NAME: ""
+
+jobs:
+
+  fetch-project:
+    name: Fetch project
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      PROJECT_NAME: ${{ steps.select-project.outputs.PROJECT_NAME }}
+      PROJECT_ID: ${{ steps.select-project.outputs.PROJECT_ID }}
+      PROJECT_NUMBER: ${{ steps.select-project.outputs.PROJECT_NUMBER }}
+    env:
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      REPO_OWNER: ${{ github.event.repository.owner.login }}
+      REPO_NAME: ${{ github.event.repository.name }}
+      GH_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION }}
+    steps:
+      - name: Get projects list
+        id: get-projects-list
+        run: |
+          #!/bin/bash
+          # GET PROJECTS LIST
+
+          # Get projects list
+          PROJECTS_LIST=$(gh api graphql -f query="
+            query {
+              repository(owner: \"$REPO_OWNER\", name: \"$REPO_NAME\") {
+                projectsV2(first: 100) {
+                  nodes {
+                    title
+                    id
+                    number
+                  }
+                }
+              }
+            }")
+
+          # Log
+          echo "Projects list: $PROJECTS_LIST"
+
+          # Store the projects list in the environment
+          echo "PROJECTS_LIST=$PROJECTS_LIST" >> $GITHUB_ENV
+
+      - name: Fetch project configured
+        id: fetch-project-configured
+        if: github.env.PROJECT_NAME != ''
+        run: |
+          #!/bin/bash
+          # FETCH PROJECT CONFIGURED
+
+          echo "Project name: $PROJECT_NAME"
+
+          # Check if the project exists
+          if [[ $(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes | length') -eq 0 ]]; then
+            echo "The project with the name $PROJECT_NAME does not exist in the repository $REPO_NAME"
+            exit 1
+          fi
+
+          PROJECT_ID=$(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes[0].id')
+          PROJECT_NUMBER=$(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes[0].number')
+
+          # Log
+          echo "Project ID: $PROJECT_ID"
+          echo "Project number: $PROJECT_NUMBER"
+
+          # Store the project data in the environment
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "PROJECT_NUMBER=$PROJECT_NUMBER" >> $GITHUB_ENV
+
+      - name: Fetch default project
+        id: fetch-default-project
+        if: github.env.PROJECT_NAME == ''
+        run: |
+            #!/bin/bash
+            # FETCH DEFAULT PROJECT
+
+            # Check if the repository has projects
+            if [[ $(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes | length') -eq 0 ]]; then
+              echo "The repository $REPO_NAME does not have any projects"
+              exit 1
+            fi
+
+            PROJECT_ID=''
+            PROJECT_NUMBER=''
+
+            # there are only one project, select it
+            if [[ $(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes | length') -eq 1 ]]; then
+
+              echo "There is only one project in the repository $REPO_NAME, select it"
+
+              PROJECT_NAME=$(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes[0].title')
+              PROJECT_ID=$(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes[0].id')
+              PROJECT_NUMBER=$(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes[0].number')
+            else
+
+              echo "There are more than one project in the repository $REPO_NAME, search for a project with the same name as the repository..."
+              
+              # Check if the exists any project with the same name as the repository
+              if [[ $(echo "$PROJECTS_LIST" | jq -r --arg PROJECT_NAME "$REPO_NAME" '.data.repository.projectsV2.nodes[] | select(.title == $PROJECT_NAME) | .title') != "$REPO_NAME" ]]; then
+                echo "Does not exist any project with the same name as the repository $REPO_NAME"
+                echo "Fail to select a default project, please set the PROJECT_NAME environment variable"
+                exit 1
+              fi
+
+              PROJECT_NAME=$REPO_NAME
+              PROJECT_ID=$(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes[0].id')
+              PROJECT_NUMBER=$(echo "$PROJECTS_LIST" | jq -r '.data.repository.projectsV2.nodes[0].number')
+            fi
+
+            # Log
+            echo "Project name: $PROJECT_NAME"
+            echo "Project ID: $PROJECT_ID"
+            echo "Project number: $PROJECT_NUMBER"
+
+            # Store the project data in the environment
+            echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
+            echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+            echo "PROJECT_NUMBER=$PROJECT_NUMBER" >> $GITHUB_ENV
+
+      - name: Select project
+        id: select-project
+        run: |
+          #!/bin/bash
+          # SELECT PROJECT
+
+          # Store environment variables as job outputs
+          echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "PROJECT_NUMBER=$PROJECT_NUMBER" >> $GITHUB_OUTPUT
+  
+  issue-opened:
+    name: Issue opened
+    needs: fetch-project
+    if: github.event.issue != null && github.event.pull_request == null && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    env:
+      ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+      REPO_OWNER: ${{ github.event.repository.owner.login }}
+      REPO_ORGANIZATION_OWNER: ${{ github.event.organization != null && github.event.organization.login || '' }}
+      REPO_USER_OWNER: ${{ github.event.organization == null && github.event.repository.owner.login || '' }}
+      PROJECT_NUMBER: ${{ needs.fetch-project.outputs.PROJECT_NUMBER }}
+    steps:
+      - name: Add a bug
+        id: add-a-bug
+        if: contains(github.event.issue.labels.*.name, env.LABEL_BUG)
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
+          organization: ${{ env.REPO_ORGANIZATION_OWNER }}
+          user: ${{ env.REPO_USER_OWNER }}
+          project_id: ${{ env.PROJECT_NUMBER }}
+          resource_node_id: ${{ env.ISSUE_NODE_ID }}
+          status_value: ${{ env.STATUS_BUG }}
+      - name: Add an enhancement
+        id: add-an-enhancement
+        if: contains(github.event.issue.labels.*.name, env.LABEL_ENHANCEMENT)
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
+          organization: ${{ env.REPO_ORGANIZATION_OWNER }}
+          user: ${{ env.REPO_USER_OWNER }}
+          project_id: ${{ env.PROJECT_NUMBER }}
+          resource_node_id: ${{ env.ISSUE_NODE_ID }}
+          status_value: ${{ env.STATUS_ENHANCEMENT }}
+      - name: Add help wanted
+        id: add-help-wanted
+        if: contains(github.event.issue.labels.*.name, env.LABEL_HELP_WANTED)
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
+          organization: ${{ env.REPO_ORGANIZATION_OWNER }}
+          user: ${{ env.REPO_USER_OWNER }}
+          project_id: ${{ env.PROJECT_NUMBER }}
+          resource_node_id: ${{ env.ISSUE_NODE_ID }}
+          status_value: ${{ env.STATUS_HELP_WANTED }}
+      - name: Add default issue
+        id: add-default-issue
+        if: github.event.issue.labels == null
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
+          organization: ${{ env.REPO_ORGANIZATION_OWNER }}
+          user: ${{ env.REPO_USER_OWNER }}
+          project_id: ${{ env.PROJECT_NUMBER }}
+          resource_node_id: ${{ env.ISSUE_NODE_ID }}
+     
+  issue-assigned-to-sprint:
+    name: Issue assigned to sprint
+    needs: fetch-project
+    if: github.event.issue != null && github.event.pull_request == null && github.event.action == 'assigned'
+    runs-on: ubuntu-latest
+    env:
+      ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+      REPO_ORGANIZATION_OWNER: ${{ github.event.organization != null && github.event.organization.login || '' }}
+      REPO_USER_OWNER: ${{ github.event.organization == null && github.event.repository.owner.login || '' }}
+      PROJECT_NUMBER: ${{ needs.fetch-project.outputs.PROJECT_NUMBER }}
+    steps:
+      - name: Check issue is in Backlog status
+        id: check-issue-in-backlog
+        env:
+          GH_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION }}
+        run: |
+          #!/bin/bash
+          # CHECK ISSUE IS IN BACKLOG STATUS
+
+          # Get the issue status
+          ISSUE_STATUS=$(gh api graphql -f query="
+            query {
+              node(id: \"$ISSUE_NODE_ID\") {
+                ... on Issue {
+                  projectCards(first: 100) {
+                    nodes {
+                      column {
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }" | jq -r -c '.data.node.projectCards.nodes[0].column.name')
+
+          # Log
+          echo "Issue status: $ISSUE_STATUS"
+
+          # Store the result in the environment
+          if [[ "$ISSUE_STATUS" != "${{ env.STATUS_BACKLOG }}" ]]; then
+            echo "ISSUE_IN_BACKLOG=false" >> $GITHUB_ENV
+          else
+            echo "ISSUE_IN_BACKLOG=true" >> $GITHUB_ENV
+          fi
+
+      - name: Move issue to Backlog status
+        id: move-issue-to-backlog
+        if: steps.check-issue-in-backlog.outputs.ISSUE_IN_BACKLOG == 'true'
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
+          organization: ${{ env.REPO_ORGANIZATION_OWNER }}
+          user: ${{ env.REPO_USER_OWNER }}
+          project_id: ${{ env.PROJECT_NUMBER }}
+          resource_node_id: ${{ env.ISSUE_NODE_ID }}
+          status_value: ${{ env.STATUS_SPRINT }}
+
+  pr-opened:
+    name: Pull request opened
+    needs: fetch-project
+    if: github.event.pull_request != null && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    outputs:
+      ISSUES_NODE_ID_BOUND_TO_PR: ${{ steps.retrieve-issues-bound-to-pr.outputs.ISSUES_NODE_ID_BOUND_TO_PR }}
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      REPO_OWNER: ${{ github.event.repository.owner.login }}
+      REPO_NAME: ${{ github.event.repository.name }}
+    steps:
+      - name: Retrieve issues bound to PR
+        id: retrieve-issues-bound-to-pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION }}
+        run: |
+          #!/bin/bash
+          # RETRIEVE ISSUE BOUND TO PR
+          
+          # Get the issues node id bound to the PR
+          ISSUES_NODE_ID_BOUND_TO_PR=$(gh api graphql -f query="
+            query {
+              repository(owner: \"$REPO_OWNER\", name: \"$REPO_NAME\") {
+                pullRequest(number: $PR_NUMBER) {
+                  closingIssuesReferences(first: 100) {
+                    nodes {
+                      id
+                    }
+                  }
+                }
+              }
+            }" | jq -r -c '.data.repository.pullRequest.closingIssuesReferences.nodes')
+          
+          # Log
+          echo "Issues bound to PR: $ISSUES_NODE_ID_BOUND_TO_PR"
+          
+          # Store the issue bound to the PR in the environment
+          echo "ISSUES_NODE_ID_BOUND_TO_PR=$ISSUES_NODE_ID_BOUND_TO_PR" >> $GITHUB_OUTPUT
+  
+  set-pr-issues-bound-in-review-status:
+    name: Set PR issues bound to In review status
+    needs:
+      - pr-opened
+      - fetch-project
+    if: success() && needs.pr-opened.outputs.ISSUES_NODE_ID_BOUND_TO_PR != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.pr-opened.outputs.ISSUES_NODE_ID_BOUND_TO_PR) }}
+    env:
+      REPO_ORGANIZATION_OWNER: ${{ github.event.organization != null && github.event.organization.login || '' }}
+      REPO_USER_OWNER: ${{ github.event.organization == null && github.event.repository.owner.login || '' }}
+      PROJECT_NUMBER: ${{ needs.fetch-project.outputs.PROJECT_NUMBER }}
+    steps:
+      - name: Move issue bound to PR to In review status
+        id: move-issue-to-in-review
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
+          organization: ${{ env.REPO_ORGANIZATION_OWNER }}
+          user: ${{ env.REPO_USER_OWNER }}
+          project_id: ${{ env.PROJECT_NUMBER }}
+          resource_node_id: ${{ fromJson(toJson(matrix)).id }}
+          status_value: ${{ env.STATUS_IN_REVIEW }}
+
+  # When an issue is closed, move it to Done, Trash or empty status column in the project according to labels
+  issue-closed:
+    name: Issue closed
+    needs: fetch-project
+    if: github.event.issue != null && github.event.pull_request == null && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    env:
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+      REPO_OWNER: ${{ github.event.repository.owner.login }}
+      REPO_ORGANIZATION_OWNER: ${{ github.event.organization != null && github.event.organization.login || '' }}
+      REPO_USER_OWNER: ${{ github.event.organization == null && github.event.repository.owner.login || '' }}
+      REPO_NAME: ${{ github.event.repository.name }}
+      PROJECT_NUMBER: ${{ needs.fetch-project.outputs.PROJECT_NUMBER }}
+    steps:
+      # Append WONTFIX label to the issue if it is closed such as not planned
+      - name: Append WONTFIX label to issue not planned
+        id: append-wontfix-label
+        if: github.event.issue.state_reason == 'not_planned' && !(contains(github.event.issue.labels.*.name, env.LABEL_INVALID) || contains(github.event.issue.labels.*.name, env.LABEL_WONTFIX) || contains(github.event.issue.labels.*.name, env.LABEL_DUPLICATE))
+        env:
+          GH_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION }}
+        run: |
+          #!/bin/bash
+          # APPEND WONTFIX LABEL TO ISSUE NOT PLANNED
+
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/$REPO_OWNER/$REPO_NAME/issues/$ISSUE_NUMBER/labels \
+            -f "labels[]=$LABEL_WONTFIX"
+
+      # Move issue to Trash if it is a invalid, wontfix or duplicate issue
+      - name: Move issue to Trash status
+        id: move-issue-to-trash
+        # NOTE: Check previous step was completed is need because github.event objecto is not updated during the execution of a workflow
+        if: steps.append-wontfix-label.outcome == 'success' || contains(github.event.issue.labels.*.name, env.LABEL_INVALID) || contains(github.event.issue.labels.*.name, env.LABEL_WONTFIX) || contains(github.event.issue.labels.*.name, env.LABEL_DUPLICATE)
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
+          organization: ${{ env.REPO_ORGANIZATION_OWNER }}
+          user: ${{ env.REPO_USER_OWNER }}
+          project_id: ${{ env.PROJECT_NUMBER }}
+          resource_node_id: ${{ env.ISSUE_NODE_ID }}
+          status_value: ${{ env.STATUS_TRASH }}
+
+      # Move issue to Done if it is a bug, enhancement or help wanted issue and it is not moved to Trash
+      - name: Move issue to Done status
+        id: move-issue-to-done
+        if: steps.move-issue-to-trash.outcome == 'skipped' && (contains(github.event.issue.labels.*.name, env.LABEL_BUG) || contains(github.event.issue.labels.*.name, env.LABEL_ENHANCEMENT) || contains(github.event.issue.labels.*.name, env.LABEL_HELP_WANTED))
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
+          organization: ${{ env.REPO_ORGANIZATION_OWNER }}
+          user: ${{ env.REPO_USER_OWNER }}
+          project_id: ${{ env.PROJECT_NUMBER }}
+          resource_node_id: ${{ env.ISSUE_NODE_ID }}
+          status_value: ${{ env.STATUS_DONE }}
+
+      # Move issue to empty status column if it is not moved to Trash or Done
+      - name: Move issue to empty status column
+        id: move-issue-to-empty-status
+        if: steps.move-issue-to-trash.outcome == 'skipped' && steps.move-issue-to-done.outcome == 'skipped'
+        uses: leonsteinhaeuser/project-beta-automations@v2.1.0
+        with:
+          gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
+          organization: ${{ env.REPO_ORGANIZATION_OWNER }}
+          user: ${{ env.REPO_USER_OWNER }}
+          project_id: ${{ env.PROJECT_NUMBER }}
+          resource_node_id: ${{ env.ISSUE_NODE_ID }}
+          status_value: ${{ env.STATUS_EMPTY }}
