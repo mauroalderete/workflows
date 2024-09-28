@@ -4,8 +4,14 @@ on:
   push:
     branches:
       - "main"
+  workflow_call:
+    secrets:
+      github-token:
+        description: 'The Github token'
+        required: false
+
 env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GH_TOKEN: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
 
 jobs:
   versioning:
@@ -28,7 +34,7 @@ jobs:
         id: semver
         uses: ietf-tools/semver-action@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
           branch: main
           majorList: BREAKING CHANGE, BREAKING, MAJOR
           minorList: FEATURE, Feature, feature, FEAT, Feat, feat
@@ -65,8 +71,7 @@ jobs:
         id: create-release-from-pr
         if: github.event.head_commit.committer.username == 'web-flow'
         env:
-          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Use this token if you don't want trigger other workflows before the release creation
-          GH_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION }} # Use this token if you want trigger other workflows before the release creation, for example, to create a package file
+          GH_TOKEN: ${{ secrets.github-token || secrets.GH_PROJECT_AUTOMATION || secrets.GITHUB_TOKEN }}
         run: |
           #!/bin/sh
 
@@ -82,8 +87,7 @@ jobs:
         id: create-release-from-commits
         if: github.event.head_commit.committer.username != 'web-flow'
         env:
-          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Use this token if you don't want trigger other workflows before the release creation
-          GH_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION }} # Use this token if you want trigger other workflows before the release creation, for example, to create a package file
+          GH_TOKEN: ${{ secrets.github-token || secrets.GH_PROJECT_AUTOMATION || secrets.GITHUB_TOKEN }}
         run: |
           #!/bin/sh
 
