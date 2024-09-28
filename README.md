@@ -1,6 +1,6 @@
-# coding-projects-template
+# workflows
 
-<h4 align="center">Template to coding projects that requires a conventional workflow</h4>
+<h4 align="center">Collection of resusable workflows for DevOps</h4>
 
 &nbsp;
 
@@ -19,78 +19,88 @@
 [![Tests](https://github.com/mauroalderete/coding-projects-template/actions/workflows/tests.yml/badge.svg)](https://github.com/mauroalderete/coding-projects-template/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/mauroalderete/coding-projects-template/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/mauroalderete/coding-projects-template/actions/workflows/codeql-analysis.yml)
 
-<a href="./issues/new/choose">Report Bug</a>
+<a href="./issues/new?assignees=&labels=bug%2Clifecycle%2Fneeds-triage&projects=mauroalderete%2F20&template=1-bug-report.yml&title=...+is+broken">Bug Report</a>
 ·
-<a href="./issues/new/choose">Request Feature</a>
+<a href="./issues/new?assignees=&labels=enhancement%2Clifecycle%2Fneeds-triage&projects=mauroalderete%2F20&template=2-feature-request.yml&title=As+a+%5Btype+of+user%5D%2C+I+want+%5Ba+goal%5D+so+that+%5Bbenefit%5D">Feature Request</a>
+·
+<a href="./issues/new?assignees=&labels=help+wanted%2Clifecycle%2Fneeds-triage&projects=mauroalderete%2F20&template=3-help-wanted.yml&title=I+need+help+with...">Help Wanted</a>
 
-<a href="https://twitter.com/intent/tweet?text=👋%20Check%20this%20amazing%20repo%20https://github.com/mauroalderete/coding-projects-template,%20created%20by%20@_mauroalderete%0A%0A%23DEVCommunity%20%23100DaysOfCode%20%23Golang%20%23gcode">
+<a href="https://twitter.com/intent/tweet?text=👋%20Check%20this%20amazing%20repo%20https://github.com/mauroalderete/workflows,%20created%20by%20@_mauroalderete%0A%0A%23DEVCommunity%20%23100DaysOfCode%20%23GitHub%20%23DevOps">
 	<img src="https://img.shields.io/twitter/url?label=Share%20on%20Twitter&style=social&url=https%3A%2F%2Fgithub.com%2Fatapas%2Fmodel-repo">
 </a>
 
 </div>
 
 &nbsp;
-# :wave: Introducing `coding-projects-templates
-This repository template contains the essential elements used in various projects to many stacks.
+## :wave: Introducing `workflows`
 
-- Includes workflows to handle labeling, versioning, testing
-- Contains a private license, a basic contributing redaction, and a covenant code of conduct.
-- Implements a definition to generate release notes.
-- Defines templates to the three issues types (bug, proposal, question) and a pull request template.
-- Additional prepare a dependabot script.
-- Schedule a CodeQL Analysis.
+This repository contains a collection of reusable workflows to implement some typical DevOps rules in your repositories:
 
-> Many of the configuration files in this repository are not working yet. Just consist of a sample definition of the configuration. You may adapt these files depending on your objectives. You should pay attention to subsequent indications to know how you do it.
+- `labeling` adds labels in your PR to help you classify them using **Conventional Commits**.
+- `versioning` increases, tags, and releases new versions of your repos based on **Semantic Versioning** when an RP is merged.
+- `project-automation` makes it easier to trace your issues in a **GitHub Project Board**, listening to the developer's collaborations.
 
-# :fire: How to use this template
+## :fire: How to use this workflows
 
-To use this template, click the button **Use this template** shown in the upper section on [root of repository](https://github.com/mauroalderete/coding-projects-template), then create a new repository.
+You need use the workflow that you want to use in a job like that:
 
-Another way is initing the process of creating a new repository and selecting this template in the upper section.
+```yaml
+jobs:
+  call-labeling-workflow:
+    uses: mauroalderete/workflows/.github/workflows/labeling.yml@v0
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+```
 
-# :building_construction: How to Set up
+You can more info in [Resuing workflows](https://docs.github.com/en/actions/sharing-automations/reusing-workflows) documentation
 
-This template contains many files. A lot of them require special attention.
+## Labeling
 
-## CodeQL
+Implements two steps:
 
-`/.github/workflows/codeql-analysis.yml`
+- `Assign labels` based on [action-assign-labels](https://github.com/mauroalderete/action-assign-labels)
+- `Verify labels` based on [action-verify-labels](https://github.com/mauroalderete/action-verify-labels)
 
-This file enables the CodeQL service provided by GitHub. You should provide a language supported.
-If your project is not supported, I recommend removing this yaml file.
+Runs when a new PR is opened or changed. Scan the conventional commits and assign the labels according to a predefined system of matches. You can give a glance for the code [labeling](.github/workflows/labeling.yml) to known more.
 
-## Code of conduct
+If the verificaction ends successful, a approval is load.
 
-`/CODE_OF_CONDUCT.md`
+You need pass a GITHUB_TOKEN valid, and if you want receive the approval need the repo enable **approval from GitHub Actions** in setting too.
 
-This code is based on the covenant code. He is only required to specify an email address to the community to send his messages. Now, this email is alderete.mauro@gmail.com.
+For run:
 
-## License
-
-`/LICENSE`
-
-This license is a private personal license redacted by chatGPT. This is only an example. I recommend changing this license to other than to be attached better to your needs.
-You can replace it with any Open License offered by GitHub, too.
-
-## Tests
-
-`/.github/workflows/tests.yml`
-
-This workflow is the most complex to configure. This depends highly on your stack and environment.
-In some cases, you will probably need to split this workflow into unit and integration tests.
-It only contains some steps with a simple message showing you the commands to configure a node test environment.
-
-I recommend you study your case carefully.
+```yaml
+jobs:
+  call-labeling-workflow:
+    uses: mauroalderete/workflows/.github/workflows/labeling.yml@v0
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+```
 
 ## Versioning
 
-`/.github/workflows/versioning.yml`
+Checks conventional commits to calculate the next incremental version based on [ietf-tools/semver-action](https://github.com/ietf-tools/semver-action).
 
-The versioning workflow contains the commands to generate a new release. This release could be attached with a binary file result from them of your project's build.
+The versioning workflow contains the commands to generate a new release.
 
-The file shows you a simple build step and package.
+You need pass a GITHUB_TOKEN valid.
+
+If you want that the `versioning` can trigger other workflow, for example, on releases... you need pass a TOKEN different the GITHUB_TOKEN. You can learn more about [triggering a workflow](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/triggering-a-workflow#triggering-a-workflow-from-a-workflow).
+
+For run with triggering other workflows support:
+
+```yaml
+jobs:
+  call-labeling-workflow:
+    uses: mauroalderete/workflows/.github/workflows/versioning.yml@v0
+    secrets:
+      github-token: ${{ secrets.MY_CUSTOM_PAT }}
+```
 
 ## Project Automation
+
+> [!WARNING]
+> The documentation for this workflow is extensive... os is WIP yet. Please read the [workflow source file](.github/workflows/project-automation.yml) directly while.
 
 This template contains a `Project Automation` workflow to perform an issue status managment on project beta. For this workflows works correctly you need configure the secret `GH_PROJECT_AUTOMATION` with a **PAT token in classic mode**.
 
@@ -109,12 +119,12 @@ The PAT token must have permissions for:
 - [x] project
   - [x] read:project
 
-## Gitignore
+## Code of conduct
 
-`/.gitignore`
+`/CODE_OF_CONDUCT.md`
 
-This file is empty. Replace the content with what you think is more convenient.
+This code is based on the covenant code. He is only required to specify an email address to the community to send his messages. Now, this email is alderete.mauro@gmail.com.
 
-## Others
+## License
 
-The rest of the files usually don't require modifications. Implements defaults and typical workflows.
+This repo is shared with `MIT LICENSE`.
