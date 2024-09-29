@@ -9,29 +9,115 @@ on:
   pull_request:
     types: 
       - opened
+  workflow_call:
+    inputs:
+      label-bug:
+        description: 'The label that will be assigned to the issue if it is a bug'
+        type: string
+        required: false
+        default: 'bug'
+      label-enhancement:
+        description: 'The label that will be assigned to the issue if it is an enhancement'
+        type: string
+        required: false
+        default: 'enhancement'
+      label-help-wanted:
+        description: 'The label that will be assigned to the issue if it is a help wanted'
+        type: string
+        required: false
+        default: 'help wanted'
+      label-invalid:
+        description: 'The label that will be assigned to the issue if it is an invalid'
+        type: string
+        required: false
+        default: 'invalid'
+      label-duplicate:
+        description: 'The label that will be assigned to the issue if it is a duplicate'
+        type: string
+        required: false
+        default: 'duplicate'
+      label-wontfix:
+        description: 'The label that will be assigned to the issue if it is a wontfix'
+        type: string
+        required: false
+        default: 'wontfix'
+      status-bug:
+        description: 'The status that will be assigned to the issue if it is a bug'
+        type: string
+        required: false
+        default: 'Bug'
+      status-enhancement:
+        description: 'The status that will be assigned to the issue if it is an enhancement'
+        type: string
+        required: false
+        default: 'Enhancement'
+      status-help-wanted:
+        description: 'The status that will be assigned to the issue if it is a help wanted'
+        type: string
+        required: false
+        default: 'Help Wanted'
+      status-backlog:
+        description: 'The status that will be assigned to the issue if it is in the backlog'
+        type: string
+        required: false
+        default: 'Backlog'
+      status-sprint:
+        description: 'The status that will be assigned to the issue if it is in a sprint'
+        type: string
+        required: false
+        default: 'Sprint'
+      status-in-review:
+        description: 'The status that will be assigned to the issue if it is in review'
+        type: string
+        required: false
+        default: 'In review'
+      status-done:
+        description: 'The status that will be assigned to the issue if it is done'
+        type: string
+        required: false
+        default: 'Done'
+      status-trash:
+        description: 'The status that will be assigned to the issue if it is trash'
+        type: string
+        required: false
+        default: 'Trash'
+      status-empty:
+        description: 'The status that will be assigned to the issue if it is empty'
+        type: string
+        required: false
+        default: 'No Status'
+      project-name:
+        description: 'The name of the project where the issue will be added'
+        type: string
+        required: false
+        default: ''
+    secrets:
+      GH_PROJECT_AUTOMATION:
+        description: 'A PAT token with the required permissions to execute the actions on projects'
+        required: true
 
 permissions:
   repository-projects: write
 
 env:
-  LABEL_BUG: bug
-  LABEL_ENHANCEMENT: enhancement
-  LABEL_HELP_WANTED: help wanted
-  LABEL_INVALID: invalid
-  LABEL_DUPLICATE: duplicate
-  LABEL_WONTFIX: wontfix
+  LABEL_BUG: ${{ inputs.label-bug || 'bug' }}
+  LABEL_ENHANCEMENT: ${{ inputs.label-enhancement || 'enhancement' }}
+  LABEL_HELP_WANTED: ${{ inputs.label-help-wanted || 'help wanted' }}
+  LABEL_INVALID: ${{ inputs.label-invalid || 'invalid' }}
+  LABEL_DUPLICATE: ${{ inputs.label-duplicate || 'duplicate' }}
+  LABEL_WONTFIX: ${{ inputs.label-wontfix || 'wontfix' }}
 
-  STATUS_BUG: Bug
-  STATUS_ENHANCEMENT: Enhancement
-  STATUS_HELP_WANTED: Help Wanted
-  STATUS_BACKLOG: Backlog
-  STATUS_SPRINT: Sprint
-  STATUS_IN_REVIEW: In review
-  STATUS_DONE: Done
-  STATUS_TRASH: Trash
-  STATUS_EMPTY: No Status
+  STATUS_BUG: ${{ inputs.status-bug || 'Bug' }}
+  STATUS_ENHANCEMENT: ${{ inputs.status-enhancement || 'Enhancement' }}
+  STATUS_HELP_WANTED: ${{ inputs.status-help-wanted || 'Help Wanted' }}
+  STATUS_BACKLOG: ${{ inputs.status-backlog || 'Backlog' }}
+  STATUS_SPRINT: ${{ inputs.status-sprint || 'Sprint' }}
+  STATUS_IN_REVIEW: ${{ inputs.status-in-review || 'In review' }}
+  STATUS_DONE: ${{ inputs.status-done || 'Done' }}
+  STATUS_TRASH: ${{ inputs.status-trash || 'Trash' }}
+  STATUS_EMPTY: ${{ inputs.status-empty || 'No Status' }}
 
-  PROJECT_NAME: ""
+  PROJECT_NAME: ${{ inputs.project-name || '' }}
 
 jobs:
 
