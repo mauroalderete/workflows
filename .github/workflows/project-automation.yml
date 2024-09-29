@@ -317,43 +317,8 @@ jobs:
       REPO_USER_OWNER: ${{ github.event.organization == null && github.event.repository.owner.login || '' }}
       PROJECT_NUMBER: ${{ needs.fetch-project.outputs.PROJECT_NUMBER }}
     steps:
-      - name: Check issue is in Backlog status
-        id: check-issue-in-backlog
-        env:
-          GH_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION }}
-        run: |
-          #!/bin/bash
-          # CHECK ISSUE IS IN BACKLOG STATUS
-
-          # Get the issue status
-          ISSUE_STATUS=$(gh api graphql -f query="
-            query {
-              node(id: \"$ISSUE_NODE_ID\") {
-                ... on Issue {
-                  projectCards(first: 100) {
-                    nodes {
-                      column {
-                        name
-                      }
-                    }
-                  }
-                }
-              }
-            }" | jq -r -c '.data.node.projectCards.nodes[0].column.name')
-
-          # Log
-          echo "Issue status: $ISSUE_STATUS"
-
-          # Store the result in the environment
-          if [[ "$ISSUE_STATUS" != "${{ env.STATUS_BACKLOG }}" ]]; then
-            echo "ISSUE_IN_BACKLOG=false" >> $GITHUB_ENV
-          else
-            echo "ISSUE_IN_BACKLOG=true" >> $GITHUB_ENV
-          fi
-
-      - name: Move issue to Backlog status
-        id: move-issue-to-backlog
-        if: steps.check-issue-in-backlog.outputs.ISSUE_IN_BACKLOG == 'true'
+      - name: Move issue to Sprint status
+        id: move-issue-to-sprint
         uses: leonsteinhaeuser/project-beta-automations@v2.1.0
         with:
           gh_token: ${{ secrets.GH_PROJECT_AUTOMATION }}
