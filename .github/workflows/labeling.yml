@@ -10,12 +10,12 @@ on:
         description: 'String with the YAML object or path to file YAML that contains a list with conventional commits and the labels matching that must be assigned'
         type: string
         required: true
-        default: ''
+        default: './.github/workflows/config/conventional-commits.yml'
       pull-request-number:
         description: 'The pull request''s number where labels will be assigned'
         type: number
         required: false
-        default: '0'
+        default: 0
       maintain-labels-not-matched:
         description: 'You should keep the conventional commit tags assigned to the pull-request, even though they are no longer referenced within commits.'
         type: boolean
@@ -99,44 +99,7 @@ jobs:
         uses: mauroalderete/action-assign-labels@v1
         with:
           github-token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
-          conventional-commits: |
-            conventional-commits:
-              - type: 'fix'
-                nouns: ['FIX', 'Fix', 'fix', 'FIXED', 'Fixed', 'fixed']
-                labels: ['bug', 'versioning/patch']
-              - type: 'feature'
-                nouns: ['FEATURE', 'Feature', 'feature', 'FEAT', 'Feat', 'feat']
-                labels: ['enhancement', 'versioning/minor']
-              - type: 'breaking_change'
-                nouns: ['BREAKING CHANGE', 'BREAKING', 'BREAK', 'breaking change', 'breaking', 'break', 'MAJOR']
-                labels: ['BREAKING CHANGE', 'versioning/major']
-              - type: 'refactor'
-                nouns: ['Refactor', 'Refact', 'Refac', 'refac', 'refact', 'refactor', 'REFAC', 'REFACT', 'REFACTOR', 'refacs', 'refacts', 'refactors', 'REFACS', 'REFACTS', 'REFACTORS']
-                labels: ['refactor', 'versioning/patch']
-              - type: 'dependencies'
-                nouns: ['dependencies', 'dependencie', 'depends', 'depend', 'deps', 'dep', 'chore']
-                labels: ['dependencies', 'versioning/patch']
-              - type: 'build'
-                nouns: ['build', 'rebuild']
-                labels: ['build', 'versioning/patch']
-              - type: 'builddeps'
-                nouns: ['build(deps)', 'build(deps-dev)']
-                labels: ['build', 'dependencies', 'versioning/patch']
-              - type: 'documentation'
-                nouns: ['doc', 'docs', 'docu', 'document', 'documentation']
-                labels: ['documentation', 'versioning/patch']
-              - type: 'config'
-                nouns: ['config', 'conf', 'configs', 'confs', 'cofiguration', 'cofigurations', 'configure']
-                labels: ['config', 'versioning/patch']
-              - type: 'ci'
-                nouns: ['ci', 'CI']
-                labels: ['ci', 'versioning/patch']
-              - type: 'test'
-                nouns: ['test', 'tests', 'testing']
-                labels: ['test']
-              - type: 'wip'
-                nouns: ['wip', 'WIP', 'Wip']
-                labels: ['wip']
+          conventional-commits: ${{ inputs.conventional-commits || './.github/workflows/config/conventional-commits.yml' }}
           pull-request-number: ${{ inputs.pull-request-number || 0 }}
           maintain-labels-not-matched: ${{ inputs.maintain-labels-not-matched || false }}
           apply-changes: ${{ inputs.apply-changes || true }}
