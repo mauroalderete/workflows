@@ -19,7 +19,7 @@ jobs:
   call-release-workflow:
     uses: mauroalderete/workflows/.github/workflows/release.yml@v0
     with:
-      next: ${{ jobs.call-versioning-workflow.outputs.next-patch }}
+      next: ${{ needs.call-versioning-workflow.outputs.next-patch }}
       include-artifacts: false
     secrets:
       github-token: ${{ secrets.GH_PROJECT_AUTOMATION || secrets.github-token || secrets.GITHUB_TOKEN }}
