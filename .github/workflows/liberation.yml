@@ -17,6 +17,7 @@ jobs:
       github-token: ${{ secrets.GH_PROJECT_AUTOMATION || secrets.github-token || secrets.GITHUB_TOKEN }}
 
   call-release-workflow:
+    needs: call-versioning-workflow
     permissions:
       contents: write
     uses: mauroalderete/workflows/.github/workflows/release.yml@v0
