@@ -65,7 +65,10 @@ Runs when a new PR is opened or changed. Scan the conventional commits and assig
 
 If the verificaction ends successful, a approval is load.
 
-You need pass a GITHUB_TOKEN valid, and if you want receive the approval need the repo enable **approval from GitHub Actions** in setting too.
+You need pass a GITHUB_TOKEN valid
+
+> [!NOTE] 
+> If you want receive the approve need the repo enable `Allow GitHub Actions to Create and approve pull request` in `Setting >> Actions >> General >> Workflow permissions`.
 
 For run:
 
