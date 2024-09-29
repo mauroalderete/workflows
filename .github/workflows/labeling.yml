@@ -164,7 +164,8 @@ jobs:
     name: Assign and test labels from conventional-commits
     if: github.event.pull_request.merged == false
     runs-on: ubuntu-latest
-    permissions: write-all
+    permissions:
+      pull-requests: write      
     steps:
       - uses: actions/checkout@v4
         with:

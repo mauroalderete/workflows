@@ -28,8 +28,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
-      statuses: write
     steps:
       - name: Set up repository
         uses: actions/checkout@v4
