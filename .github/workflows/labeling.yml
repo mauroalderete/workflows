@@ -4,6 +4,83 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize, labeled, unlabeled]
+  workflow_call:
+    inputs:
+      conventional-commits:
+        description: 'String with the YAML object or path to file YAML that contains a list with conventional commits and the labels matching that must be assigned'
+        type: string
+        required: true
+        default: './.github/workflows/config/conventional-commits.yml'
+      pull-request-number:
+        description: 'The pull request''s number where labels will be assigned'
+        type: number
+        required: false
+        default: 0
+      maintain-labels-not-matched:
+        description: 'You should keep the conventional commit tags assigned to the pull-request, even though they are no longer referenced within commits.'
+        type: boolean
+        required: false
+        default: false
+      apply-changes:
+        description: 'Should will be executing the workflow and save any change to the repository.'
+        type: boolean
+        required: false
+        default: true
+      all:
+        description: | 
+          List of the labels.
+          The pull request must be assigned with all of these labels listed.
+        type: string
+        required: false
+        default: ''
+      none:
+        description: | 
+          List of the labels.
+          The pull request must not be assigned with any of these labels listed.
+        type: string
+        required: false
+        default: 'question, wontfix, invalid, duplicate'
+      some:
+        description: | 
+          List of the labels.
+          The pull request must be assigned with one or more of these labels listed.
+        type: string
+        required: false
+        default: 'versioning/patch, versioning/minor, versioning/major'
+      just-one:
+        description: | 
+          List of the labels.
+          The pull request must be assigned only one of these labels listed.
+        type: string
+        required: false
+        default: ''
+      request-review:
+        description: | 
+          Boolean flag. False by default.
+          Should send a request review to notify whether the pull request passed or not this verification.
+        type: boolean
+        required: false
+        default: true
+      request-review-header:
+        description: |
+          A string that is attached to the beginning of the review comment.
+          Supports GitHub Flavored Markdown.
+        type: string
+        required: false
+        default: '**action-verify-labels**'
+      emit-error-if-verify-fail:
+        description: |
+          The verification end with an error if the pull request not satisfy the verification.
+          If this is enabled and the process end without any issue, then the approved == 'false', action-status == 'END' and action-message contains a description of the reason for the fail.
+          By default is true.
+        type: boolean
+        required: false
+        default: true
+    
+    secrets:
+      github-token:
+        description: 'The Github token'
+        required: false
 
 jobs:
   labels-test:
@@ -21,52 +98,22 @@ jobs:
         id: action-assign-labels
         uses: mauroalderete/action-assign-labels@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          conventional-commits: |
-            conventional-commits:
-              - type: 'fix'
-                nouns: ['FIX', 'Fix', 'fix', 'FIXED', 'Fixed', 'fixed']
-                labels: ['bug', 'versioning/patch']
-              - type: 'feature'
-                nouns: ['FEATURE', 'Feature', 'feature', 'FEAT', 'Feat', 'feat']
-                labels: ['enhancement', 'versioning/minor']
-              - type: 'breaking_change'
-                nouns: ['BREAKING CHANGE', 'BREAKING', 'BREAK', 'breaking change', 'breaking', 'break', 'MAJOR']
-                labels: ['BREAKING CHANGE', 'versioning/major']
-              - type: 'refactor'
-                nouns: ['Refactor', 'Refact', 'Refac', 'refac', 'refact', 'refactor', 'REFAC', 'REFACT', 'REFACTOR', 'refacs', 'refacts', 'refactors', 'REFACS', 'REFACTS', 'REFACTORS']
-                labels: ['refactor', 'versioning/patch']
-              - type: 'dependencies'
-                nouns: ['dependencies', 'dependencie', 'depends', 'depend', 'deps', 'dep', 'chore']
-                labels: ['dependencies', 'versioning/patch']
-              - type: 'build'
-                nouns: ['build', 'rebuild']
-                labels: ['build', 'versioning/patch']
-              - type: 'builddeps'
-                nouns: ['build(deps)', 'build(deps-dev)']
-                labels: ['build', 'dependencies', 'versioning/patch']
-              - type: 'documentation'
-                nouns: ['doc', 'docs', 'docu', 'document', 'documentation']
-                labels: ['documentation', 'versioning/patch']
-              - type: 'config'
-                nouns: ['config', 'conf', 'configs', 'confs', 'cofiguration', 'cofigurations', 'configure']
-                labels: ['config', 'versioning/patch']
-              - type: 'ci'
-                nouns: ['ci', 'CI']
-                labels: ['ci', 'versioning/patch']
-              - type: 'test'
-                nouns: ['test', 'tests', 'testing']
-                labels: ['test']
-              - type: 'wip'
-                nouns: ['wip', 'WIP', 'Wip']
-                labels: ['wip']
+          github-token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
+          conventional-commits: ${{ inputs.conventional-commits || './.github/workflows/config/conventional-commits.yml' }}
+          pull-request-number: ${{ inputs.pull-request-number || 0 }}
+          maintain-labels-not-matched: ${{ inputs.maintain-labels-not-matched || false }}
+          apply-changes: ${{ inputs.apply-changes || true }}
 
       - name: Verify labels
         id: action-verify-labels
         uses: mauroalderete/action-verify-labels@v1
         with:
-          none: question, wontfix, invalid, duplicate
-          some: versioning/patch, versioning/minor, versioning/major
-          request-review: true
-          request-review-header: "**:bookmark: verify-labels-action**"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          all: ${{ inputs.all || '' }}
+          none: ${{ inputs.none || 'question, wontfix, invalid, duplicate' }}
+          some: ${{ inputs.some || 'versioning/patch, versioning/minor, versioning/major' }}
+          just-one: ${{ inputs.just-one || '' }}
+          emit-error-if-verify-fail: ${{ inputs.emit-error-if-verify-fail || true }}
+          request-review: ${{ inputs.request-review || true }}
+          request-review-header: ${{ inputs.request-review-header || '**action-verify-labels**' }}
+          github-token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ inputs.pull-request-number || 0 }}
