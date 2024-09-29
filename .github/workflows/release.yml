@@ -52,7 +52,7 @@ jobs:
         run: |
           #!/bin/sh
 
-          if [ "${{ github.event.head_commit.committer.username }}" = "web-flow" ]; then
+          if [ "${{ github.event.head_commit.committer.username }}" != "web-flow" ]; then
             echo "::warning ::There were no pull requests associated with the commits included in this release. Automatically-generated notes were not generated."
           fi
 
