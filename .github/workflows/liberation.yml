@@ -1,0 +1,25 @@
+name: Liberation
+
+on:
+  push:
+    branches:
+      - "main"
+  workflow_call:
+    secrets:
+      github-token:
+        description: 'The Github token'
+        required: true
+
+jobs:
+  call-versioning-workflow:
+    uses: mauroalderete/workflows/.github/workflows/versioning.yml@v0
+    secrets:
+      github-token: ${{ secrets.GH_PROJECT_AUTOMATION || secrets.github-token || secrets.GITHUB_TOKEN }}
+
+  call-release-workflow:
+    uses: mauroalderete/workflows/.github/workflows/release.yml@v0
+    with:
+      next: ${{ jobs.call-versioning-workflow.outputs.next-patch }}
+      include-artifacts: false
+    secrets:
+      github-token: ${{ secrets.GH_PROJECT_AUTOMATION || secrets.github-token || secrets.GITHUB_TOKEN }}

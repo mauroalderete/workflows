@@ -1,9 +1,6 @@
 name: Versioning
 
 on:
-  push:
-    branches:
-      - "main"
   workflow_call:
     inputs:
       branch:
@@ -26,20 +23,23 @@ on:
         type: string
         required: false
         default: 'FIX, Fix, fix, FIXED, Fixed, fixed, Refactor, Refact, Refac, refac, refact, refactor, REFAC, REFACT, REFACTOR, refacs, refacts, refactors, REFACS, REFACTS, REFACTORS, config, conf, configs, confs, cofiguration, cofigurations, configure, doc, docs, docu, document, documentation, dependencies, dependencie, depends, depend, deps, dep, chore, build, rebuild, build(deps), build(deps-dev), ci, CI, test, tests, testing, wip, WIP, Wip'
-      release-artifacts:
-        description: 'Boolean flag. False by default. Should create a release with the artifacts.'
-        type: boolean
-        required: false
-        default: false
-      artifacts-name:
-        description: 'The artifacts name to be downloaded. It must be the same name used in the upload artifacts action. If not informed, all artifacts for the run will be downloaded.'
-        type: string
-        required: false
-        default: ''
     secrets:
       github-token:
         description: 'The Github token'
         required: true
+    outputs:
+      current:
+        description: 'The current version'
+        value: ${{ jobs.versioning.outputs.current }}
+      next-patch:
+        description: 'The next version with format v0.0.0'
+        value: ${{ jobs.versioning.outputs.next-patch }}
+      next-minor:
+        description: 'The minor version with format v0.0'
+        value: ${{ jobs.versioning.outputs.next-minor }}
+      next-major:
+        description: 'The major version with format v0'
+        value: ${{ jobs.versioning.outputs.next-major }}
 
 env:
   GH_TOKEN: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
@@ -53,7 +53,10 @@ jobs:
       pull-requests: write
       statuses: write
     outputs:
-      version: ${{ steps.semver.outputs.next }}
+      current: ${{ steps.semver.outputs.current }}
+      next-patch: ${{ steps.semver.outputs.next }}
+      next-minor: ${{ steps.push.outputs.minor }}
+      next-major: ${{ steps.push.outputs.major }}
     steps:
       - name: Set up repository
         uses: actions/checkout@v4
@@ -73,7 +76,7 @@ jobs:
           patchAll: false
 
       - name: Push tags
-        id: push-tags
+        id: push
         run: |
           #!/bin/sh
           # Get minor tag
@@ -89,37 +92,6 @@ jobs:
           # Push new tag forcing the update of the minor and major tag
           git push --tag --force
 
-      - name: Download artifacts
-        id: download-artifacts
-        if: inputs.release-artifacts == true
-        uses: actions/download-artifact@v4
-        with:
-          github-token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
-          name: ${{ inputs.artifacts-name || '' }}
-          path: './artifacts'
-      
-      - name: Create Release
-        id: create-release
-        env:
-          GH_TOKEN: ${{ secrets.github-token || secrets.GH_PROJECT_AUTOMATION || secrets.GITHUB_TOKEN }}
-        run: |
-          #!/bin/sh
-
-          if [ "${{ github.event.head_commit.committer.username }}" = "web-flow" ]; then
-            echo "::warning ::There were no pull requests associated with the commits included in this release. Automatically-generated notes were not generated."
-          fi
-  
-          # The last commit was committed by GitHub.
-          # We assume that the push event come of the a potential pull-request.
-          if [ "${{ inputs.release-artifacts || false }}" = "true" ]; then
-            gh release create ${{ steps.semver.outputs.next }} \
-            --title 'Release ${{ steps.semver.outputs.next }}' \
-            --notes "Changelog Contents :sunglasses:" \
-            --generate-notes \
-            $(find ./artifacts -maxdepth 1 -type f -print0 | xargs -0 echo)
-          else
-            gh release create ${{ steps.semver.outputs.next }} \
-            --title 'Release ${{ steps.semver.outputs.next }}' \
-            --notes "Changelog Contents :sunglasses:" \
-            --generate-notes
-          fi
+          # output major and minor tags
+          echo "::set-output name=major::$major"
+          echo "::set-output name=minor::$minor"
