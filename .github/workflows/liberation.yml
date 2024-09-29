@@ -10,6 +10,9 @@ on:
         description: 'The Github token'
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   call-versioning-workflow:
     uses: mauroalderete/workflows/.github/workflows/versioning.yml@v0
@@ -18,8 +21,6 @@ jobs:
 
   call-release-workflow:
     needs: call-versioning-workflow
-    permissions:
-      contents: write
     uses: mauroalderete/workflows/.github/workflows/release.yml@v0
     with:
       next: ${{ needs.call-versioning-workflow.outputs.next-patch }}

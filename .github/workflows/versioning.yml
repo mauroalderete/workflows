@@ -48,6 +48,8 @@ jobs:
   versioning:
     name: Versioning
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       current: ${{ steps.semver.outputs.current }}
       next-patch: ${{ steps.semver.outputs.next }}
