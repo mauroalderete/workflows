@@ -32,6 +32,7 @@
   - [Labeling](#labeling)
   - [Versioning](#versioning)
   - [Release](#release)
+  - [Liberation](#liberation)
   - [Project Automation](#project-automation)
     - [Entry](#entry)
     - [Progression](#progression)
@@ -168,6 +169,50 @@ jobs:
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       next: 'v1.0.3'
+```
+
+### Liberation
+
+This workflows combine `versioning` and `release` versioning reusable workflows to bring a simple and repetable flow to liberate new repositories versions that don't include artifacts to attach.
+
+This flow is useful to repositories that don't publish new releases with other artifacts that must to be building after the versioning tag, but before the release process.
+
+For example, the current repository don't need build artifacts, so is an excelent use case for consume `liberation` workflow.
+
+Otherwise, repositories such as based on npm, often requires an bulding steps or update the versioning tag into `package.json` once the versioning is calculated but before the release to be published. In this cases `liberation` could not enough for you. But feel free to take it like example or propose more liberation alternatives to reimplement.
+
+For use remember implement the same permissions used by `versioning` and `release`, and setup the correctly `github-token` if you want *dispatch* other workflows later.
+
+```yaml
+name: Liberation
+
+on:
+  push:
+    branches:
+      - "main"
+  workflow_call:
+    secrets:
+      github-token:
+        description: 'The Github token'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  call-versioning-workflow:
+    uses: mauroalderete/workflows/.github/workflows/versioning.yml@v0
+    secrets:
+      github-token: ${{ secrets.GH_PROJECT_AUTOMATION || secrets.github-token || secrets.GITHUB_TOKEN }}
+
+  call-release-workflow:
+    needs: call-versioning-workflow
+    uses: mauroalderete/workflows/.github/workflows/release.yml@v0
+    with:
+      next: ${{ needs.call-versioning-workflow.outputs.next-patch }}
+      include-artifacts: false
+    secrets:
+      github-token: ${{ secrets.GH_PROJECT_AUTOMATION || secrets.github-token || secrets.GITHUB_TOKEN }}
 ```
 
 ### Project Automation
