@@ -93,5 +93,5 @@ jobs:
           git push --tag --force
 
           # output major and minor tags
-          echo "::set-output name=major::$major"
-          echo "::set-output name=minor::$minor"
+          echo "major=$major" >> $GITHUB_OUTPUT
+          echo "minor=$minor" >> $GITHUB_OUTPUT
