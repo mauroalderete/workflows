@@ -67,7 +67,7 @@ on:
           Supports GitHub Flavored Markdown.
         type: string
         required: false
-        default: '**:bookmark: verify-labels-action**'
+        default: '**action-verify-labels**'
       emit-error-if-verify-fail:
         description: |
           The verification end with an error if the pull request not satisfy the verification.
@@ -114,6 +114,6 @@ jobs:
           just-one: ${{ inputs.just-one || '' }}
           emit-error-if-verify-fail: ${{ inputs.emit-error-if-verify-fail || true }}
           request-review: ${{ inputs.request-review || true }}
-          request-review-header: ${{ inputs.request-review-header || '**verify-labels-action**' }}
+          request-review-header: ${{ inputs.request-review-header || '**action-verify-labels**' }}
           github-token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
           pull-request-number: ${{ inputs.pull-request-number || 0 }}
