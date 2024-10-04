@@ -171,6 +171,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
 
       - name: Assign labels
         id: action-assign-labels
