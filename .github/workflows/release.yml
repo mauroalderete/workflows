@@ -34,13 +34,14 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.ref }}
+          token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
 
       - name: Download artifacts
         id: download-artifacts
         if: inputs.include-artifacts == true
         uses: actions/download-artifact@v4
         with:
-          github-token: ${{ secrets.github-token }}
+          github-token: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
           name: ${{ inputs.artifacts-name || '' }}
           path: './artifacts'
       
@@ -48,7 +49,7 @@ jobs:
         id: create-release-with-artifacts
         if: inputs.include-artifacts == true
         env:
-          GH_TOKEN: ${{ secrets.github-token }}
+          GH_TOKEN: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
         run: |
           #!/bin/sh
 
@@ -66,7 +67,7 @@ jobs:
         id: create-release-without-artifacts
         if: inputs.include-artifacts == false
         env:
-          GH_TOKEN: ${{ secrets.github-token }}
+          GH_TOKEN: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}
         run: |
           #!/bin/sh
 
