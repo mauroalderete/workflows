@@ -2,7 +2,7 @@ name: Help Wanted
 description: Request help or suggest a topic to discuss
 title: "I need help with..."
 labels: ["help wanted", "lifecycle/needs-triage"]
-projects: ["cedeirasf/2"]
+projects: ["mauroalderete/20"]
 body:
   - type: markdown
     attributes:
