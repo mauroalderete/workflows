@@ -25,7 +25,7 @@ on:
               nouns: ['Refactor', 'Refact', 'Refac', 'refac', 'refact', 'refactor', 'REFAC', 'REFACT', 'REFACTOR', 'refacs', 'refacts', 'refactors', 'REFACS', 'REFACTS', 'REFACTORS']
               labels: ['refactor', 'versioning/patch']
             - type: 'dependencies'
-              nouns: ['dependencies', 'dependencie', 'depends', 'depend', 'deps', 'dep', 'chore']
+              nouns: ['dependencies', 'dependencie', 'depends', 'depend', 'deps', 'dep', 'chore', 'chore(deps)']
               labels: ['dependencies', 'versioning/patch']
             - type: 'build'
               nouns: ['build', 'rebuild']
@@ -135,7 +135,7 @@ env:
         nouns: ['Refactor', 'Refact', 'Refac', 'refac', 'refact', 'refactor', 'REFAC', 'REFACT', 'REFACTOR', 'refacs', 'refacts', 'refactors', 'REFACS', 'REFACTS', 'REFACTORS']
         labels: ['refactor', 'versioning/patch']
       - type: 'dependencies'
-        nouns: ['dependencies', 'dependencie', 'depends', 'depend', 'deps', 'dep', 'chore']
+        nouns: ['dependencies', 'dependencie', 'depends', 'depend', 'deps', 'dep', 'chore', 'chore(deps)']
         labels: ['dependencies', 'versioning/patch']
       - type: 'build'
         nouns: ['build', 'rebuild']
